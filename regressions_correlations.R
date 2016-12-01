@@ -22,7 +22,7 @@ setwd("/Users/SaranyaGanapa/Dropbox/vishu-sharu/R/HistData/1minute-2010-15/")
 # Note : Runtime 5minutes / year
 startYear <- 2012
 endYear <- 2015
-version <- 3.0
+version <- 3.1
 
 # ===========================
 # ===========================
@@ -177,10 +177,27 @@ getFXReturnsAndStdDev <- function(currencyPair) {
   
   # PART 1 : Compute FX Returns
   # Group by Date and compute (11am - 10am / 10am)
+  # To handle discrepancy between count of 10oClock values & 11oClock values
+  # Take 10oClocks separately, divide and update fxReturns values
+  # Group by Date and subtract 10oClock from 11oClock
   fxReturns <- currencyPairData %>%
+    select(everything()) %>%
     filter(Time >= 100000 & Time <= 110000) %>%
     group_by(Date) %>%
-    summarise(fxReturns = (Close[which(Time == 110000)] - Close[which(Time == 100000)]) / Close[which(Time == 100000)])
+    summarise(fxReturns = (sum(Close[which(Time == 110000)], -Close[which(Time == 100000)])))
+  
+  # Get only 10oClock rows
+  fxReturnsTen <- currencyPairData %>%
+    select(everything()) %>%
+    filter(Time == 100000)
+  
+  # merge by Date to ignore the dates where either 11/10oClock are missing
+  mergedFxReturns <- merge(fxReturns, fxReturnsTen, by="Date")
+  # To the Grouped by Date values divide by 10oClock to get fxReturns
+  fxReturns <- mergedFxReturns %>%
+    mutate(Date = Date, fxReturns = fxReturns / Close) %>%
+    select(Date, fxReturns)
+
   colnames(fxReturns) <- c("Date", "FX_Returns")
 
   tail(fxReturns)
@@ -232,13 +249,13 @@ getFXReturnsAndStdDev <- function(currencyPair) {
 
 # Get FX Returns data for 10 currencies
 EURUSD_RV <- getFXReturnsAndStdDev("EURUSD")
-USDCHF_RV <- getFXReturnsAndStdDev("USDCHF") 
+USDCHF_RV <- getFXReturnsAndStdDev("USDCHF")
 USDJPY_RV <- getFXReturnsAndStdDev("USDJPY")
 USDCAD_RV <- getFXReturnsAndStdDev("USDCAD")
 AUDUSD_RV <- getFXReturnsAndStdDev("AUDUSD")
 NZDUSD_RV <- getFXReturnsAndStdDev("NZDUSD")
 USDSEK_RV <- getFXReturnsAndStdDev("USDSEK")
-# USDNOK_RV <- getFXReturnsAndStdDev("USDNOK")
+USDNOK_RV <- getFXReturnsAndStdDev("USDNOK")
 GBPUSD_RV <- getFXReturnsAndStdDev("GBPUSD")
 USDMXN_RV <- getFXReturnsAndStdDev("USDMXN")
 
@@ -246,6 +263,7 @@ USDMXN_RV <- getFXReturnsAndStdDev("USDMXN")
 print('Check Returns % SD for Equity & FX for one pair')
 tail(EURUSD_RV)
 head(GSPC_RV)
+
 
 # ===========================
 # ===========================
@@ -440,7 +458,7 @@ getCoEffs(GSPC_RV, USDCAD_RV, 1, 'USDCAD')
 getCoEffs(GSPC_RV, AUDUSD_RV, 1, 'AUDUSD')
 getCoEffs(GSPC_RV, NZDUSD_RV, 1, 'NZDUSD')
 getCoEffs(GSPC_RV, USDSEK_RV, 1, 'USDSEK')
-# getCoEffs(GSPC_RV, USDNOK_RV, 1, 'USDNOK')
+getCoEffs(GSPC_RV, USDNOK_RV, 1, 'USDNOK')
 getCoEffs(GSPC_RV, USDMXN_RV, 1, 'USDMXN')
 getCoEffs(GSPC_RV, GBPUSD_RV, 1, 'GBPUSD')
 
@@ -452,7 +470,7 @@ getCoEffs(GDAXI_RV, USDCAD_RV, 6, 'USDCAD')
 getCoEffs(GDAXI_RV, AUDUSD_RV, 6, 'AUDUSD')
 getCoEffs(GDAXI_RV, NZDUSD_RV, 6, 'NZDUSD')
 getCoEffs(GDAXI_RV, USDSEK_RV, 6, 'USDSEK')
-# getCoEffs(GDAXI_RV, USDNOK_RV, 6, 'USDNOK')
+getCoEffs(GDAXI_RV, USDNOK_RV, 6, 'USDNOK')
 getCoEffs(GDAXI_RV, USDMXN_RV, 6, 'USDMXN')
 getCoEffs(GDAXI_RV, GBPUSD_RV, 6, 'GBPUSD')
 
@@ -466,7 +484,7 @@ getCoEffs(SSMI_RV, USDCAD_RV, 11, 'USDCAD')
 getCoEffs(SSMI_RV, AUDUSD_RV, 11, 'AUDUSD')
 getCoEffs(SSMI_RV, NZDUSD_RV, 11, 'NZDUSD')
 getCoEffs(SSMI_RV, USDSEK_RV, 11, 'USDSEK')
-# getCoEffs(SSMI_RV, USDNOK_RV, 11, 'USDNOK')
+getCoEffs(SSMI_RV, USDNOK_RV, 11, 'USDNOK')
 getCoEffs(SSMI_RV, USDMXN_RV, 11, 'USDMXN')
 getCoEffs(SSMI_RV, GBPUSD_RV, 11, 'GBPUSD')
 
@@ -480,7 +498,7 @@ getCoEffs(N225_RV, USDCAD_RV, 16, 'USDCAD')
 getCoEffs(N225_RV, AUDUSD_RV, 16, 'AUDUSD')
 getCoEffs(N225_RV, NZDUSD_RV, 16, 'NZDUSD')
 getCoEffs(N225_RV, USDSEK_RV, 16, 'USDSEK')
-# getCoEffs(N225_RV, USDNOK_RV, 16, 'USDNOK')
+getCoEffs(N225_RV, USDNOK_RV, 16, 'USDNOK')
 getCoEffs(N225_RV, USDMXN_RV, 16, 'USDMXN')
 getCoEffs(N225_RV, GBPUSD_RV, 16, 'GBPUSD')
 
@@ -493,7 +511,7 @@ getCoEffs(GSPTSE_RV, USDCAD_RV, 21, 'USDCAD')
 getCoEffs(GSPTSE_RV, AUDUSD_RV, 21, 'AUDUSD')
 getCoEffs(GSPTSE_RV, NZDUSD_RV, 21, 'NZDUSD')
 getCoEffs(GSPTSE_RV, USDSEK_RV, 21, 'USDSEK')
-# getCoEffs(GSPTSE_RV, USDNOK_RV, 21, 'USDNOK')
+getCoEffs(GSPTSE_RV, USDNOK_RV, 21, 'USDNOK')
 getCoEffs(GSPTSE_RV, USDMXN_RV, 21, 'USDMXN')
 getCoEffs(GSPTSE_RV, GBPUSD_RV, 21, 'GBPUSD')
 
@@ -506,7 +524,7 @@ getCoEffs(AORD_RV, USDCAD_RV, 26, 'USDCAD')
 getCoEffs(AORD_RV, AUDUSD_RV, 26, 'AUDUSD')
 getCoEffs(AORD_RV, NZDUSD_RV, 26, 'NZDUSD')
 getCoEffs(AORD_RV, USDSEK_RV, 26, 'USDSEK')
-# getCoEffs(AORD_RV, USDNOK_RV, 26, 'USDNOK')
+getCoEffs(AORD_RV, USDNOK_RV, 26, 'USDNOK')
 getCoEffs(AORD_RV, USDMXN_RV, 26, 'USDMXN')
 getCoEffs(AORD_RV, GBPUSD_RV, 26, 'GBPUSD')
 
@@ -520,7 +538,7 @@ getCoEffs(NZ50_RV, USDCAD_RV, 31, 'USDCAD')
 getCoEffs(NZ50_RV, AUDUSD_RV, 31, 'AUDUSD')
 getCoEffs(NZ50_RV, NZDUSD_RV, 31, 'NZDUSD')
 getCoEffs(NZ50_RV, USDSEK_RV, 31, 'USDSEK')
-# getCoEffs(NZ50_RV, USDNOK_RV, 31, 'USDNOK')
+getCoEffs(NZ50_RV, USDNOK_RV, 31, 'USDNOK')
 getCoEffs(NZ50_RV, USDMXN_RV, 31, 'USDMXN')
 getCoEffs(NZ50_RV, GBPUSD_RV, 31, 'GBPUSD')
 
@@ -534,7 +552,7 @@ getCoEffs(OMX_RV, USDCAD_RV, 36, 'USDCAD')
 getCoEffs(OMX_RV, AUDUSD_RV, 36, 'AUDUSD')
 getCoEffs(OMX_RV, NZDUSD_RV, 36, 'NZDUSD')
 getCoEffs(OMX_RV, USDSEK_RV, 36, 'USDSEK')
-# getCoEffs(OMX_RV, USDNOK_RV, 36, 'USDNOK')
+getCoEffs(OMX_RV, USDNOK_RV, 36, 'USDNOK')
 getCoEffs(OMX_RV, USDMXN_RV, 36, 'USDMXN')
 getCoEffs(OMX_RV, GBPUSD_RV, 36, 'GBPUSD')
 
@@ -548,7 +566,7 @@ getCoEffs(FTSE_RV, USDCAD_RV, 36, 'USDCAD')
 getCoEffs(FTSE_RV, AUDUSD_RV, 36, 'AUDUSD')
 getCoEffs(FTSE_RV, NZDUSD_RV, 36, 'NZDUSD')
 getCoEffs(FTSE_RV, USDSEK_RV, 36, 'USDSEK')
-# getCoEffs(FTSE_RV, USDNOK_RV, 36, 'USDNOK')
+getCoEffs(FTSE_RV, USDNOK_RV, 36, 'USDNOK')
 getCoEffs(FTSE_RV, USDMXN_RV, 36, 'USDMXN')
 getCoEffs(FTSE_RV, GBPUSD_RV, 36, 'GBPUSD')
 
@@ -562,7 +580,7 @@ getCoEffs(MXX_RV, USDCAD_RV, 36, 'USDCAD')
 getCoEffs(MXX_RV, AUDUSD_RV, 36, 'AUDUSD')
 getCoEffs(MXX_RV, NZDUSD_RV, 36, 'NZDUSD')
 getCoEffs(MXX_RV, USDSEK_RV, 36, 'USDSEK')
-# getCoEffs(MXX_RV, USDNOK_RV, 36, 'USDNOK')
+getCoEffs(MXX_RV, USDNOK_RV, 36, 'USDNOK')
 getCoEffs(MXX_RV, USDMXN_RV, 36, 'USDMXN')
 getCoEffs(MXX_RV, GBPUSD_RV, 36, 'GBPUSD')
 
@@ -669,10 +687,10 @@ VIX_MOM_USDSEK <- inner_join(VIX, USDSEK_RV, by="Date") %>%
 	mutate(VIX = Close) %>%
 	select(Date, VIX, MOM_Factor, FX_Returns, FX_Standard_Deviation)
 
-# VIX_MOM_USDNOK <- inner_join(VIX, USDNOK_RV, by="Date") %>%
-#  	inner_join(., momentum, by="Date") %>%
-#  	mutate(VIX = Close) %>%
-#  	select(Date, VIX, MOM_Factor, FX_Returns, FX_Standard_Deviation)
+VIX_MOM_USDNOK <- inner_join(VIX, USDNOK_RV, by="Date") %>%
+ 	inner_join(., momentum, by="Date") %>%
+ 	mutate(VIX = Close) %>%
+ 	select(Date, VIX, MOM_Factor, FX_Returns, FX_Standard_Deviation)
 
 VIX_MOM_GBPUSD <- inner_join(VIX, GBPUSD_RV, by="Date") %>%
 	inner_join(., momentum, by="Date") %>%
@@ -823,7 +841,7 @@ getFactorCoEffs(VIX_MOM_USDCAD, 'USDCAD')
 getFactorCoEffs(VIX_MOM_AUDUSD, 'AUDUSD')
 getFactorCoEffs(VIX_MOM_NZDUSD, 'NZDUSD')
 getFactorCoEffs(VIX_MOM_USDSEK, 'USDSEK')
-# getFactorCoEffs(VIX_MOM_USDNOK, 'USDNOK')
+getFactorCoEffs(VIX_MOM_USDNOK, 'USDNOK')
 getFactorCoEffs(VIX_MOM_USDMXN, 'USDMXN')
 getFactorCoEffs(VIX_MOM_GBPUSD, 'GBPUSD')
 
@@ -930,7 +948,7 @@ getCor(GSPC_RV, USDCAD_RV, 1, 'USDCAD')
 getCor(GSPC_RV, AUDUSD_RV, 1, 'AUDUSD')
 getCor(GSPC_RV, NZDUSD_RV, 1, 'NZDUSD')
 getCor(GSPC_RV, USDSEK_RV, 1, 'USDSEK')
-# getCor(GSPC_RV, USDNOK_RV, 1, 'USDNOK')
+getCor(GSPC_RV, USDNOK_RV, 1, 'USDNOK')
 getCor(GSPC_RV, USDMXN_RV, 1, 'USDMXN')
 getCor(GSPC_RV, GBPUSD_RV, 1, 'GBPUSD')
 
@@ -942,7 +960,7 @@ getCor(GDAXI_RV, USDCAD_RV, 2, 'USDCAD')
 getCor(GDAXI_RV, AUDUSD_RV, 2, 'AUDUSD')
 getCor(GDAXI_RV, NZDUSD_RV, 2, 'NZDUSD')
 getCor(GDAXI_RV, USDSEK_RV, 2, 'USDSEK')
-# getCor(GDAXI_RV, USDNOK_RV, 2, 'USDNOK')
+getCor(GDAXI_RV, USDNOK_RV, 2, 'USDNOK')
 getCor(GDAXI_RV, USDMXN_RV, 2, 'USDMXN')
 getCor(GDAXI_RV, GBPUSD_RV, 2, 'GBPUSD')
 
@@ -956,7 +974,7 @@ getCor(SSMI_RV, USDCAD_RV, 3, 'USDCAD')
 getCor(SSMI_RV, AUDUSD_RV, 3, 'AUDUSD')
 getCor(SSMI_RV, NZDUSD_RV, 3, 'NZDUSD')
 getCor(SSMI_RV, USDSEK_RV, 3, 'USDSEK')
-# getCor(SSMI_RV, USDNOK_RV, 3, 'USDNOK')
+getCor(SSMI_RV, USDNOK_RV, 3, 'USDNOK')
 getCor(SSMI_RV, USDMXN_RV, 3, 'USDMXN')
 getCor(SSMI_RV, GBPUSD_RV, 3, 'GBPUSD')
 
@@ -970,7 +988,7 @@ getCor(N225_RV, USDCAD_RV, 4, 'USDCAD')
 getCor(N225_RV, AUDUSD_RV, 4, 'AUDUSD')
 getCor(N225_RV, NZDUSD_RV, 4, 'NZDUSD')
 getCor(N225_RV, USDSEK_RV, 4, 'USDSEK')
-# getCor(N225_RV, USDNOK_RV, 4, 'USDNOK')
+getCor(N225_RV, USDNOK_RV, 4, 'USDNOK')
 getCor(N225_RV, USDMXN_RV, 4, 'USDMXN')
 getCor(N225_RV, GBPUSD_RV, 4, 'GBPUSD')
 
@@ -983,7 +1001,7 @@ getCor(GSPTSE_RV, USDCAD_RV, 5, 'USDCAD')
 getCor(GSPTSE_RV, AUDUSD_RV, 5, 'AUDUSD')
 getCor(GSPTSE_RV, NZDUSD_RV, 5, 'NZDUSD')
 getCor(GSPTSE_RV, USDSEK_RV, 5, 'USDSEK')
-# getCor(GSPTSE_RV, USDNOK_RV, 5, 'USDNOK')
+getCor(GSPTSE_RV, USDNOK_RV, 5, 'USDNOK')
 getCor(GSPTSE_RV, USDMXN_RV, 5, 'USDMXN')
 getCor(GSPTSE_RV, GBPUSD_RV, 5, 'GBPUSD')
 
@@ -996,7 +1014,7 @@ getCor(AORD_RV, USDCAD_RV, 6, 'USDCAD')
 getCor(AORD_RV, AUDUSD_RV, 6, 'AUDUSD')
 getCor(AORD_RV, NZDUSD_RV, 6, 'NZDUSD')
 getCor(AORD_RV, USDSEK_RV, 6, 'USDSEK')
-# getCor(AORD_RV, USDNOK_RV, 6, 'USDNOK')
+getCor(AORD_RV, USDNOK_RV, 6, 'USDNOK')
 getCor(AORD_RV, USDMXN_RV, 6, 'USDMXN')
 getCor(AORD_RV, GBPUSD_RV, 6, 'GBPUSD')
 
@@ -1010,7 +1028,7 @@ getCor(NZ50_RV, USDCAD_RV, 7, 'USDCAD')
 getCor(NZ50_RV, AUDUSD_RV, 7, 'AUDUSD')
 getCor(NZ50_RV, NZDUSD_RV, 7, 'NZDUSD')
 getCor(NZ50_RV, USDSEK_RV, 7, 'USDSEK')
-# getCor(NZ50_RV, USDNOK_RV, 7, 'USDNOK')
+getCor(NZ50_RV, USDNOK_RV, 7, 'USDNOK')
 getCor(NZ50_RV, USDMXN_RV, 7, 'USDMXN')
 getCor(NZ50_RV, GBPUSD_RV, 7, 'GBPUSD')
 
@@ -1024,7 +1042,7 @@ getCor(OMX_RV, USDCAD_RV, 8, 'USDCAD')
 getCor(OMX_RV, AUDUSD_RV, 8, 'AUDUSD')
 getCor(OMX_RV, NZDUSD_RV, 8, 'NZDUSD')
 getCor(OMX_RV, USDSEK_RV, 8, 'USDSEK')
-# getCor(OMX_RV, USDNOK_RV, 8, 'USDNOK')
+getCor(OMX_RV, USDNOK_RV, 8, 'USDNOK')
 getCor(OMX_RV, USDMXN_RV, 8, 'USDMXN')
 getCor(OMX_RV, GBPUSD_RV, 8, 'GBPUSD')
 
@@ -1038,7 +1056,7 @@ getCor(FTSE_RV, USDCAD_RV, 9, 'USDCAD')
 getCor(FTSE_RV, AUDUSD_RV, 9, 'AUDUSD')
 getCor(FTSE_RV, NZDUSD_RV, 9, 'NZDUSD')
 getCor(FTSE_RV, USDSEK_RV, 9, 'USDSEK')
-# getCor(FTSE_RV, USDNOK_RV, 9, 'USDNOK')
+getCor(FTSE_RV, USDNOK_RV, 9, 'USDNOK')
 getCor(FTSE_RV, USDMXN_RV, 9, 'USDMXN')
 getCor(FTSE_RV, GBPUSD_RV, 9, 'GBPUSD')
 
@@ -1052,19 +1070,19 @@ getCor(MXX_RV, USDCAD_RV, 10, 'USDCAD')
 getCor(MXX_RV, AUDUSD_RV, 10, 'AUDUSD')
 getCor(MXX_RV, NZDUSD_RV, 10, 'NZDUSD')
 getCor(MXX_RV, USDSEK_RV, 10, 'USDSEK')
-# getCor(MXX_RV, USDNOK_RV, 10, 'USDNOK')
+getCor(MXX_RV, USDNOK_RV, 10, 'USDNOK')
 getCor(MXX_RV, USDMXN_RV, 10, 'USDMXN')
 getCor(MXX_RV, GBPUSD_RV, 10, 'GBPUSD')
 
 print("Correlations computations completed")
 
-print("Filled FXV_EQR Table")
+print("Filled Correlations FXV_EQR Table")
 Cor_FXV_EQR_DF
 
-print("Filled FXV_EQV Table")
+print("Filled Correlations FXV_EQV Table")
 Cor_FXV_EQV_DF
 
-print("Filled FXR_EQR Table")
+print("Filled Correlations FXR_EQR Table")
 Cor_FXR_EQR_DF
 
 print("Filled FXR_EQV Table")
