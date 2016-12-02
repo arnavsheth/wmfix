@@ -15,14 +15,14 @@ suppressWarnings(library(plyr))
 suppressWarnings(library(dplyr))
 suppressWarnings(library(magrittr))
 
-# Import Equity & FX Helpers
+# Import FX Data files downloaded from HistData
 setwd("/Users/SaranyaGanapa/Dropbox/vishu-sharu/R/HistData/1minute-2010-15/")
 
 # Use same start and end years for FX and equity
 # Note : Runtime 5minutes / year
 startYear <- 2012
 endYear <- 2015
-version <- 3.1
+version <- 3.2
 
 # ===========================
 # ===========================
@@ -260,9 +260,9 @@ GBPUSD_RV <- getFXReturnsAndStdDev("GBPUSD")
 USDMXN_RV <- getFXReturnsAndStdDev("USDMXN")
 
 # Check Returns and Volatility for a single Equity and FX
-print('Check Returns % SD for Equity & FX for one pair')
-tail(EURUSD_RV)
-head(GSPC_RV)
+# print('Check Returns % SD for Equity & FX for one pair')
+# tail(EURUSD_RV)
+# head(GSPC_RV)
 
 
 # ===========================
@@ -559,35 +559,38 @@ getCoEffs(OMX_RV, GBPUSD_RV, 36, 'GBPUSD')
 
 # FTSE -> FXs
 # 'FTSE' : Index 1
-getCoEffs(FTSE_RV, EURUSD_RV, 36, 'EURUSD')
-getCoEffs(FTSE_RV, USDCHF_RV, 36, 'USDCHF')
-getCoEffs(FTSE_RV, USDJPY_RV, 36, 'USDJPY')
-getCoEffs(FTSE_RV, USDCAD_RV, 36, 'USDCAD')
-getCoEffs(FTSE_RV, AUDUSD_RV, 36, 'AUDUSD')
-getCoEffs(FTSE_RV, NZDUSD_RV, 36, 'NZDUSD')
-getCoEffs(FTSE_RV, USDSEK_RV, 36, 'USDSEK')
-getCoEffs(FTSE_RV, USDNOK_RV, 36, 'USDNOK')
-getCoEffs(FTSE_RV, USDMXN_RV, 36, 'USDMXN')
-getCoEffs(FTSE_RV, GBPUSD_RV, 36, 'GBPUSD')
+getCoEffs(FTSE_RV, EURUSD_RV, 41, 'EURUSD')
+getCoEffs(FTSE_RV, USDCHF_RV, 41, 'USDCHF')
+getCoEffs(FTSE_RV, USDJPY_RV, 41, 'USDJPY')
+getCoEffs(FTSE_RV, USDCAD_RV, 41, 'USDCAD')
+getCoEffs(FTSE_RV, AUDUSD_RV, 41, 'AUDUSD')
+getCoEffs(FTSE_RV, NZDUSD_RV, 41, 'NZDUSD')
+getCoEffs(FTSE_RV, USDSEK_RV, 41, 'USDSEK')
+getCoEffs(FTSE_RV, USDNOK_RV, 41, 'USDNOK')
+getCoEffs(FTSE_RV, USDMXN_RV, 41, 'USDMXN')
+getCoEffs(FTSE_RV, GBPUSD_RV, 41, 'GBPUSD')
 
 
 # MXX -> FXs
 # 'MXX' : Index 1
-getCoEffs(MXX_RV, EURUSD_RV, 36, 'EURUSD')
-getCoEffs(MXX_RV, USDCHF_RV, 36, 'USDCHF')
-getCoEffs(MXX_RV, USDJPY_RV, 36, 'USDJPY')
-getCoEffs(MXX_RV, USDCAD_RV, 36, 'USDCAD')
-getCoEffs(MXX_RV, AUDUSD_RV, 36, 'AUDUSD')
-getCoEffs(MXX_RV, NZDUSD_RV, 36, 'NZDUSD')
-getCoEffs(MXX_RV, USDSEK_RV, 36, 'USDSEK')
-getCoEffs(MXX_RV, USDNOK_RV, 36, 'USDNOK')
-getCoEffs(MXX_RV, USDMXN_RV, 36, 'USDMXN')
-getCoEffs(MXX_RV, GBPUSD_RV, 36, 'GBPUSD')
+getCoEffs(MXX_RV, EURUSD_RV, 46, 'EURUSD')
+getCoEffs(MXX_RV, USDCHF_RV, 46, 'USDCHF')
+getCoEffs(MXX_RV, USDJPY_RV, 46, 'USDJPY')
+getCoEffs(MXX_RV, USDCAD_RV, 46, 'USDCAD')
+getCoEffs(MXX_RV, AUDUSD_RV, 46, 'AUDUSD')
+getCoEffs(MXX_RV, NZDUSD_RV, 46, 'NZDUSD')
+getCoEffs(MXX_RV, USDSEK_RV, 46, 'USDSEK')
+getCoEffs(MXX_RV, USDNOK_RV, 46, 'USDNOK')
+getCoEffs(MXX_RV, USDMXN_RV, 46, 'USDMXN')
+getCoEffs(MXX_RV, GBPUSD_RV, 46, 'GBPUSD')
 
-
+print("FXV_EQR_DF Regression table")
 FXV_EQR_DF
+print("FXV_EQV_DF Regression table")
 FXV_EQV_DF
+print("FXR_EQR_DF Regression table")
 FXR_EQR_DF
+print("FXR_EQV_DF Regression table")
 FXR_EQV_DF
 
 # ===========================
@@ -1087,3 +1090,26 @@ Cor_FXR_EQR_DF
 
 print("Filled FXR_EQV Table")
 Cor_FXR_EQV_DF
+
+# Save to CSV's
+getwd()
+setwd('../../WM_Fix_Results/')
+
+# Save Regression results into CSVs
+write.table(FXV_EQR_DF, file = "Reg_FXV_EQR_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+write.table(FXV_EQV_DF, file = "Reg_FXV_EQV_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+write.table(FXR_EQR_DF, file = "Reg_FXR_EQR_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+write.table(FXR_EQV_DF, file = "Reg_FXR_EQV_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+
+# Save VIX MOM results into CSVs
+write.table(VIX_MOM_FXR_DF, file = "VIX_MOM_FXR_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+write.table(VIX_MOM_FXV_DF, file = "VIX_MOM_FXV_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+
+# Save Correlation results into CSVs
+write.table(Cor_FXV_EQR_DF, file = "Cor_FXV_EQR_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+write.table(Cor_FXV_EQV_DF, file = "Cor_FXV_EQV_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+write.table(Cor_FXR_EQR_DF, file = "Cor_FXR_EQR_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+write.table(Cor_FXR_EQV_DF, file = "Cor_FXR_EQV_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+
+
+
