@@ -26,7 +26,11 @@ getwd()
 # Note : Runtime 5minutes / year
 startYear <- 2012
 endYear <- 2015
-version <- 4.3
+# Modes in which program input data is consumed
+# 1. ALL_DATA : All the raw data without any filtering
+# 2. MONTH_END_ONLY : Only last trading day data is consumed
+mode <- "MONTH_END_ONLY"
+version <- 4.4
 
 # ===========================
 # ===========================
@@ -48,6 +52,43 @@ getDataForSymbols <- function(tickers, dataSource) {
                env = parent.frame())
   }
 }
+
+# Helper function to select all the rows where the day is the last trading day of each month
+# Loop for all years
+#   Loop for each month in that year
+#     Find the last row and get the associated day of each month
+#       Get the data of the last day only
+#         Merge all the month's last day data and Return.
+getMonthEndEquityData <- function(equity_RV) {
+  monthEndTradingDays <- data.frame()
+  
+  for(i in startYear:endYear) {
+    currentYear <- equity_RV %>%
+      filter(Year==i)
+    
+    for(j in 1:12) {
+      currentMonth <- currentYear %>%
+        filter(Month==j)
+      
+      lastRowIndex = nrow(currentMonth)
+      # print(currentMonth)
+      lastDay = currentMonth[lastRowIndex, "Day"]
+      print(paste("Equity : Last trading day of ", j, "/", i, " is : ", lastDay, sep=""))
+      
+      lastDayData = currentMonth %>%
+        filter(Day==lastDay)
+      
+      print(lastDayData)
+      monthEndTradingDays <- rbind(monthEndTradingDays, lastDayData)
+    }
+  }
+  
+  # Last trading day data for all months startYear till endYear
+  print(monthEndTradingDays)
+  
+  return(monthEndTradingDays)
+}
+
 
 # Equity : 21 days Rolling returns & Standard deviation
 getEquityReturnsAndStdDev <- function() {
@@ -82,6 +123,9 @@ getEquityReturnsAndStdDev <- function() {
   for(i in 22:length(unique(equity$Date))) {
     equityReturns[i, 'Equity_Returns'] <- as.numeric((equity$Open[i] - equity$Open[i-21]) / equity$Open[i-21]);
     equityReturns[i, 'Date'] <- as.numeric(equity$Date[i]);
+    equityReturns[i, 'Year'] <- as.numeric(equity$Year[i]);
+    equityReturns[i, 'Month'] <- as.numeric(equity$Month[i]);
+    equityReturns[i, 'Day'] <- as.numeric(equity$Day[i]);
   }
   
   tail(equityReturns)
@@ -90,6 +134,9 @@ getEquityReturnsAndStdDev <- function() {
   for(i in 2:length(unique(equity$Date))) {
     equityDailyReturns[i, 'Equity_Daily_Returns'] <- as.numeric((equity$Open[i] - equity$Open[i-1]) / equity$Open[i-1]);
     equityDailyReturns[i, 'Date'] <- as.numeric(equity$Date[i]);
+    equityDailyReturns[i, 'Year'] <- as.numeric(equity$Year[i]);
+    equityDailyReturns[i, 'Month'] <- as.numeric(equity$Month[i]);
+    equityDailyReturns[i, 'Day'] <- as.numeric(equity$Day[i]);
   }
   
   # Step 2- Rolling 21 Day Standard Deviation for equity
@@ -98,8 +145,14 @@ getEquityReturnsAndStdDev <- function() {
     equityDailyStandardDev[i, 'Equity_Standard_Deviation'] <- sd(equityDailyReturns[startIndex:i, 'Equity_Daily_Returns'])
     equityDailyStandardDev[i, 'Date'] <- as.numeric(equity$Date[i]);
   }
+  
   # Create returns and standard deviation data frame
   equityDF <- merge(equityReturns, equityDailyStandardDev, by="Date")
+  
+  # Filter an get only month end trading day data is mode is set to be "MONTH_END_ONLY"
+  if(mode == "MONTH_END_ONLY") {
+    equityDF <- getMonthEndEquityData(equityDF)
+  }
   
   print("Returning equityDF from func")
   print(head(equityDF))
@@ -134,6 +187,7 @@ equity <- FTSE
 FTSE_RV <- getEquityReturnsAndStdDev()
 equity <- MXX
 MXX_RV <- getEquityReturnsAndStdDev()
+
 
 # ===========================
 # ===========================
@@ -187,6 +241,38 @@ formatDateTime <- function(currencyPairData, flipCurrency) {
   return(currencyPairData)
 }
 
+# Helper function to select all the rows where the day is the last trading day of each month
+# Loop for all years
+#   Loop for each month in that year
+#     Find the last row and get the associated day of each month
+#       Get the data of the last day only
+#         Merge all the month's last day data and Return.
+getMonthEndFXData <- function(FX) {
+  monthEndTradingDays <- data.frame()
+  
+  for(i in startYear:endYear) {
+    currentYear <- FX %>%
+      filter(Year==i)
+    
+    for(j in 1:12) {
+      currentMonth <- currentYear %>%
+        filter(Month==j)
+      
+      lastRowIndex = nrow(currentMonth)
+      lastDay = currentMonth[lastRowIndex, "Day"]
+      print(paste("FX : Last trading day of ", j, "/", i, " is : ", lastDay, sep=""))
+      
+      lastDayData = currentMonth %>%
+        filter(Day==lastDay)
+      
+      print(head(lastDayData))
+      
+      monthEndTradingDays <- rbind(monthEndTradingDays, lastDayData)
+    }
+  }
+  
+  return(monthEndTradingDays)
+}
 
 getFXReturnsAndStdDev <- function(currencyPair, flipCurrency) {
   # get csv's merged from startyear till endyear
@@ -217,9 +303,9 @@ getFXReturnsAndStdDev <- function(currencyPair, flipCurrency) {
   # To the Grouped by Date values divide by 10oClock to get fxReturns
   fxReturns <- mergedFxReturns %>%
     mutate(Date = Date, fxReturns = fxReturns / Close) %>%
-    select(Date, fxReturns)
+    select(Date, fxReturns, Year, Month, Day)
 
-  colnames(fxReturns) <- c("Date", "FX_Returns")
+  colnames(fxReturns) <- c("Date", "FX_Returns", "Year", "Month", "Day")
 
   tail(fxReturns)
   
@@ -272,6 +358,12 @@ getFXReturnsAndStdDev <- function(currencyPair, flipCurrency) {
 
   # Merge FX Returns and FX Standard deviation data frames
   fxDFReturnsStandardDeviation <- merge(fxReturns, fxStandardDeviation, by="Date")
+  
+  # Filter an get only month end trading day data is mode is set to be "MONTH_END_ONLY"
+  if(mode == "MONTH_END_ONLY") {
+    fxDFReturnsStandardDeviation <- getMonthEndFXData(fxDFReturnsStandardDeviation)
+  }
+  
   print("Tail : FX 5 minute rolling return + SD")
   print(tail(fxDFReturnsStandardDeviation))
   
@@ -1182,25 +1274,30 @@ getwd()
 # PC
 setwd('..\\..\\WM_Fix_Results\\')
 
+fileNameSuffix = ""
+if(mode == "MONTH_END_ONLY") {
+  fileNameSuffix = "_MEnd"  
+}
+
 # Save Regression results into CSVs
-write.table(FXV_EQR_DF, file = "Reg_FXV_EQR_DF.csv", sep = ",", col.names = NA, qmethod = "double")
-write.table(FXV_EQV_DF, file = "Reg_FXV_EQV_DF.csv", sep = ",", col.names = NA, qmethod = "double")
-write.table(FXR_EQR_DF, file = "Reg_FXR_EQR_DF.csv", sep = ",", col.names = NA, qmethod = "double")
-write.table(FXR_EQV_DF, file = "Reg_FXR_EQV_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+write.table(FXV_EQR_DF, file = paste("Reg_FXV_EQR_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
+write.table(FXV_EQV_DF, file = paste("Reg_FXV_EQV_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
+write.table(FXR_EQR_DF, file = paste("Reg_FXR_EQR_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
+write.table(FXR_EQV_DF, file = paste("Reg_FXR_EQV_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
 
 # Save VIX MOM results into CSVs
-write.table(VIX_MOM_VYM_TS_FXR_DF, file = "VIX_MOM_VYM_TS_FXR_DF.csv", sep = ",", col.names = NA, qmethod = "double")
-write.table(VIX_MOM_VYM_TS_FXV_DF, file = "VIX_MOM_VYM_TS_FXV_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+write.table(VIX_MOM_VYM_TS_FXR_DF, file = paste("VIX_MOM_VYM_TS_FXR_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
+write.table(VIX_MOM_VYM_TS_FXV_DF, file = paste("VIX_MOM_VYM_TS_FXV_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
 
 # Save Unlike Correlation results into CSVs
-write.table(Cor_FXV_EQR_DF, file = "Cor_FXV_EQR_DF.csv", sep = ",", col.names = NA, qmethod = "double")
-write.table(Cor_FXV_EQV_DF, file = "Cor_FXV_EQV_DF.csv", sep = ",", col.names = NA, qmethod = "double")
-write.table(Cor_FXR_EQR_DF, file = "Cor_FXR_EQR_DF.csv", sep = ",", col.names = NA, qmethod = "double")
-write.table(Cor_FXR_EQV_DF, file = "Cor_FXR_EQV_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+write.table(Cor_FXV_EQR_DF, file = paste("Cor_FXV_EQR_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
+write.table(Cor_FXV_EQV_DF, file = paste("Cor_FXV_EQV_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
+write.table(Cor_FXR_EQR_DF, file = paste("Cor_FXR_EQR_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
+write.table(Cor_FXR_EQV_DF, file = paste("Cor_FXR_EQV_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
 
 # Save Unlike Correlation results into CSVs
-write.table(Cor_EQR_EQR_DF, file = "Cor_EQR_EQR_DF.csv", sep = ",", col.names = NA, qmethod = "double")
-write.table(Cor_EQV_EQV_DF, file = "Cor_EQV_EQV_DF.csv", sep = ",", col.names = NA, qmethod = "double")
-write.table(Cor_FXR_FXR_DF, file = "Cor_FXR_FXR_DF.csv", sep = ",", col.names = NA, qmethod = "double")
-write.table(Cor_FXV_FXV_DF, file = "Cor_FXV_FXV_DF.csv", sep = ",", col.names = NA, qmethod = "double")
+write.table(Cor_EQR_EQR_DF, file = paste("Cor_EQR_EQR_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
+write.table(Cor_EQV_EQV_DF, file = paste("Cor_EQV_EQV_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
+write.table(Cor_FXR_FXR_DF, file = paste("Cor_FXR_FXR_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
+write.table(Cor_FXV_FXV_DF, file = paste("Cor_FXV_FXV_DF", fileNameSuffix, ".csv", sep=""), sep = ",", col.names = NA, qmethod = "double")
 
